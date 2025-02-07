@@ -1,0 +1,162 @@
+---
+title: "gh1"
+author: "Min Kim"
+date: "2025-02-03"
+output: pdf_document
+---
+
+```{r}
+library(here)
+library(data.table)
+library(readr)
+```
+## 4.1 
+```{r, bring in the CLASSSUR dataset}
+classsur <- read.table(here("Graded Homework", "classsur.txt"), header = TRUE, sep = "", fill = TRUE, stringsAsFactors = FALSE)
+head(classsur)
+summary(classsur)
+```
+
+### a.
+Estimate the population mean of one of the measurement variables, such as age, grade point average (GPA), or study hours.
+
+To estimate the population mean for a simple random sample of n accounts, we employ the sample average $$\bar{y}$$. 
+$$
+\bar{y} = \frac{\Sigma_{i=1}^n y_i}{n}
+$$
+```{r}
+sum_age <- sum(classsur$Age) 
+n <- nrow(classsur)
+y_bar <- sum_age / n
+print(y_bar)
+```
+
+### b.
+Estimate a population proportion for one of the categorical variables, such as gender, class, or job status.
+
+To estimate the population proportion, we employ $$\hat{p}$$.
+```{r}
+# Estimation population proportion of male samples / total number of samples
+male <- sum(classsur$Gender == 1)
+pop_prop_male <- male / n
+print(pop_prop_male)
+```
+
+### c. 
+Compare means on one variable for at least two different groups, such as men and
+women.
+
+We use the same variable, Gender, as part b) for part c). 
+For a random sample from a population with independent random sample from a population with means $$\mu_y$$ and $$\mu_x$$, an unbiased estimate of $$mu_y - mu_x$$ is $$\bar{y}-\bar{x}$$. 
+
+```{r}
+mean_male <- mean(classsur$Gender == 1)
+mean_female <- mean(classsur$Gender == 2)
+diff_means <- mean_male - mean_female
+print(diff_means)
+```
+
+### d.
+Compare proportions on one categorical variable for at least two different groups
+(i.e., class standing or location of permanent residence).
+
+We compare the proportions of class standing. Class standing, provided in the Classsur dataset, is a categorical variable. Therefore, we treat classes 2.0, 3.0, 65.0, 4.0, 68.6, 1.0, 68.0, 61.0, 64.0, 67.0, 66.5, 108.0, and 5.0 as separate groups.  
+```{r}
+# identifying the unique groups in the Class standing variable
+# unique(classsur$Class) 
+
+classes_to_compare <- c(2.0, 4.0, 68.0)
+class_prop <- prop.table(table(classsur$Class))
+filtered_prop <- class_prop[names(class_prop) 
+                            %in% classes_to_compare]
+cat("proportions of classes 2.0, 4.0, and 68.0 each: ", filtered_prop)
+```
+
+## SRS 3
+```{r, for SRS 3, we use the Turkey2011fv.csv dataset}
+
+# read the Turkey2011fv.csv dataset, then check the structure of the csv file and a brief numerical summary
+turkey2011 <- read.csv(here("Datasets", "Turkey2011fv.csv"))
+str(turkey2011) 
+summary(turkey2011)
+
+# Population size N
+N <- dim(turkey2011)[1]
+cat("population size N: ", N)
+
+# assign sample size n = 1500 as provided in problem instructions
+n <- 1500
+
+# filter data based on eftypes (1, 2, 3)
+pop_1 <- subset(turkey2011, eftype == 1)$Nfraudmean
+pop_2 <- subset(turkey2011, eftype == 2)$Nfraudmean
+pop_3 <- subset(turkey2011, eftype == 3)$Nfraudmean
+```
+We estimate the difference of means of the number of eforensics-fraudulent votes (variable Nfraudmean) of two populations (eftype = 1, 2) based on srswor in the Turkey2011fv.csv file. From our computational calculation, we obtain the results as the following:
+```{r}
+# calculate means and standard errors
+mean_1 <- mean(pop_1)
+mean_2 <- mean(pop_2)
+std_1 <- sd(pop_1)
+std_2 <- sd(pop_2)
+
+# compare the difference of means
+diff_means <- mean_2 - mean_1
+
+# standard error of difference
+se_diff <- sqrt((std_1^2 / length(pop_1)) + (std_2^2 / length(pop_2)))
+
+# construct a 95% CI
+ci_lower <- diff_means - (1.96 * se_diff)
+ci_upper <- diff_means + (1.96 * se_diff)
+
+cat("Population 1 (eftype 1) Mean number of eforensics-fraudulent votes:", mean_1, "\n")
+cat("Population 2 (eftype 2) Mean eforensics-fraudulent votes:", mean_2, "\n")
+cat("Difference of Means:", diff_means, "\n")
+cat("Standard Error of Differences of Means", se_diff, "\n")
+cat("95% CI: [", ci_lower, ci_upper, "]", "\n")
+```
+Now, let us estimate the mean number of eforensics-fraudulent votes by type (eftype = 2, 3) using sample size n = 1500 and estimate the difference of means between the two types, evaluating the bound on the error of estimation as the following:
+```{r}
+# create subset populations for eftypes 2 and 3
+pop_2 <- turkey2011$Nfraudmean[turkey2011$eftype == 2]
+pop_3 <- turkey2011$Nfraudmean[turkey2011$eftype == 3]
+
+# create random samples; get sample mean and stdev
+set.seed(123)
+sample_2 <- sample(pop_2, n, replace = FALSE)
+sample_3 <- sample(pop_3, n, replace = FALSE)
+
+mean_sample_2 <- mean(sample_2)
+mean_sample_3 <- mean(sample_3)
+sd2 <- sd(sample_2)
+sd3 <- sd(sample_3)
+
+cat("Mean for eftype == 2:", mean_sample_2, "\n")
+cat("Mean for eftype == 3:", mean_sample_3, "\n")
+cat("Standard Deviation for eftype = 2:", sd2, "\n")
+cat("Standard Deviation for eftype = 3:", sd3, "\n")
+
+# diff in sample means
+diff_means <- mean_sample_3 - mean_sample_2
+
+n2 <- length(sample_2[!is.na(sample_2)])
+n3 <- length(sample_3[!is.na(sample_3)])
+
+# standard error of difference
+se_diff <- sqrt((sd2^2 / n2) + (sd3^2 / n3))
+
+cat("Difference of Means:", diff_means, "\n")
+cat("Standard Error of the Difference:", se_diff, "\n")
+
+ci_lower <- diff_means - (1.96 * se_diff)
+ci_upper <- diff_means + (1.96 * se_diff)
+
+cat("Margin of Error:", 1.96 * se_diff)
+cat("95% CI: [", ci_lower, ci_upper, "]", "\n")
+```
+
+
+
+
+
