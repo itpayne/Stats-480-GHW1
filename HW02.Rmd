@@ -1,0 +1,188 @@
+---
+title: "HW2"
+author: "Min Kim"
+date: "2025-02-03"
+output: pdf_document
+---
+```{r, packages}
+library(here)
+library(ISLR)
+```
+
+# 1.
+
+## a.
+```{r, import and open csv data}
+college <- read.csv(here("Data Files", "College.csv"))
+```
+
+## b.
+```{r}
+rownames(college) = college[,1]
+fix(college)
+college = college[-1]
+fix(college)
+```
+
+## c. 
+
+### i.
+```{r}
+summary(college)
+```
+
+### ii.
+```{r}
+college_numeric <- college[, sapply(college[, 1:10], is.numeric)]
+pairs(college_numeric, main = "Scatterplot Matrix of First 10 Variables")
+```
+
+### iii.
+```{r}
+college$Private <- as.factor(college$Private)
+plot(Outstate ~ Private, data = college,
+     main = "Boxplot of Outstate Tuition by Colleges' Private / Public Status",
+     xlab = "Private (Yes / No)",
+     ylabs = "Outstate Tuition",
+     col = c("lightblue", "orange")
+     )
+```
+
+### iv.
+```{r}
+Elite = rep("No", nrow(college))
+Elite[college$Top10perc > 50] = "Yes"
+Elite = as.factor(Elite)
+college = data.frame(college, Elite)
+
+summary(college)
+
+plot(Outstate ~ Elite, data = college,
+     main = "Boxplot of Outstate Tuition by Elite (Yes / No)",
+     xlab = "Elite University (Yes / No)",
+     ylab = "Outstate Tuition",
+     col = c("pink", "turquoise")
+     )
+```
+
+### v.
+```{r}
+par(mfrow = c(2,2))
+# using the str() function, identify which quantitative variables to use
+str(college)
+
+# plot histograms
+hist(college$Outstate,
+     breaks = 10,
+     main = "Histogram of Outstate Tuition (10 bins)",
+     xlab = "Outstate Tuition",
+     col = "lightblue"
+     )
+
+hist(college$Books,
+     breaks = 50,
+     main = "Histogram of Book Costs (50 bins)",
+     xlab = "Book Costs",
+     col = "brown"
+     )
+
+hist(college$Grad.Rate,
+     breaks = 20,
+     main = "Histogram of College Graduation Rates (20 bins)",
+     xlab = "Graduation Rates",
+     col = "purple"
+     )
+
+hist(college$Apps,
+     breaks = 100,
+     main = "Histogram of College Applicaitons (100 bins)",
+     xlab = "Number of Applications",
+     col = "yellow"
+     )
+```
+
+### vi.
+```{r}
+par(mfrow = c(1,2))
+# Correlation visualization using correlation Matrix and heatmap
+numeric_vars <- college[, sapply(college, is.numeric)]
+cor_matrix <- cor(numeric_vars, use = "complete.obs")
+heatmap(cor_matrix, main = "Correlation heatmap", 
+        col = colorRampPalette(c("darkgreen", "ivory", "orange"))(50)
+        )
+
+# Group comparisons using mean comparison and boxplots
+tapply(college$Outstate, college$Private, mean)
+tapply(college$Grad.Rate, college$Elite, mean)
+boxplot(Grad.Rate ~ Elite, data = college,
+        main = "Graduation Rate by Elite Status",
+        xlab = "Elite Status (Yes / No)",
+        ylab = "Graduation Rate",
+        col = c("pink", "lightblue")
+        )
+
+# Graphical and numerical analysis to identify potential outliers
+boxplot(college$Accept,
+        main = "Boxplot of Acceptance Rate",
+        col = "red"
+        )
+
+# Scatterplots between variables
+plot(college$Apps, college$Accept,
+     main = "Applications vs. Acceptance",
+     xlab = "Applications",
+     ylab = "Acceptance",
+     col = "violet"
+     )
+```
+
+# 2. 
+```{r}
+str(Carseats)
+```
+
+## a.
+```{r}
+mlr <- lm(Sales ~ Price + Urban + US, data = Carseats)
+summary(mlr)
+```
+
+## b.
+Note that Sales and Price are quantitative variables, whereas Urban and US are qualitative variables that take 1 as "no" and 2 as "yes". The intercept coefficient indicates the predicted Sales value when all predictor variables - Price, Urban, and US - are at reference level, hence when Price == 0, Urban == 1(no), and US == 1(no). The Price coefficient indicates that for every unit increase of the Price variable, the price company charges for car seats at each site, Sales decrease by 0.054459, holding other variables constant. The Urban coefficient indicates the difference in the Sales variable for stores located in urban areas compared to non-urban areas when other variables are held constant.
+
+## c.
+```{r}
+coeff <- coef(mlr)
+cat("Sales =", coeff[1], "+", coeff[2], "* Price +", coeff[3], "* UrbanYes +", coeff[4], "* USYes\n" )
+```
+We can also write this as
+$$
+Y = 13.0435 - 0.05446\beta_1 - 0.02193\beta_2 + 1.2006\beta_3
+$$
+, where 13.0435 is $$\beta_0$$, the intercept, $$\beta_1$$ as Price, $$\beta_2$$ as Urban(Yes), and $$\beta_3$$ as US(Yes). 
+
+## d.
+Based on the p-values of the predictors, we can reject the null hypothesis $$H_0$$ for predictors Price and US(Yes).
+```{r}
+summary(mlr)$coeff
+```
+
+## e.
+```{r}
+new_mlr <- lm(Sales ~ Price + US, data = Carseats)
+summary(new_mlr)
+```
+
+## f.
+To compare how well the models in (a) and (e) fit the data, let us use R-squared, Adjusted R-squared, and AIC. Based on our results, the both models explain approximately 23.9% of the variance in Sales, with negligible difference. The AIC suggests that our new model in (e) fits the data more parsimonious in fitting the data compared to the model in (a).
+```{r}
+# r-squared
+summary(mlr)$r.squared
+summary(new_mlr)$r.squared
+
+summary(mlr)$adj.r.squared
+summary(new_mlr)$adj.r.squared
+
+AIC(mlr)
+AIC(new_mlr)
+```
